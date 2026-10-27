@@ -2490,8 +2490,16 @@ func (c *linuxContainer) handleOp(op opReqType, childPid int, reqs []opReq) erro
 	namespaces := []string{}
 
 	switch op {
-	case bind, chown, mkdir, overlay, rootfsIDMap, sysfs:
+	case bind, chown, mkdir, overlay, rootfsIDMap:
 		namespaces = append(namespaces,
+			fmt.Sprintf("mnt:/proc/%d/ns/mnt", childPid),
+			fmt.Sprintf("pid:/proc/%d/ns/pid", childPid),
+		)
+	case sysfs:
+		// sysfs tags its superblock with the mounter's netns; mount from the
+		// container's netns so /sys/class/net etc. reflect the container's devices.
+		namespaces = append(namespaces,
+			fmt.Sprintf("net:/proc/%d/ns/net", childPid),
 			fmt.Sprintf("mnt:/proc/%d/ns/mnt", childPid),
 			fmt.Sprintf("pid:/proc/%d/ns/pid", childPid),
 		)
